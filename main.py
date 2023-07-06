@@ -5,6 +5,7 @@ import time
 import csv
 import requests
 import json
+import random
 
 # 创建 Chrome 浏览器实例
 CORP_ID = "wwc307dfc2cab1e8ed"
@@ -12,11 +13,16 @@ SECRET = "q_ml2ucAQg_GG0PCE4T-eSPhkqKI-cU5tAZEQw7sHrg"
 
 
 """-------反爬设置------"""
+# 开发者模式
 options = webdriver.ChromeOptions()
 options.add_experimental_option('excludeSwitches', ['enable-automation'])
+# 禁用启用Blink运行时的功能
 options.add_argument("--disable-blink-features=AutomationControlled")
-
+# 禁止图片和css加载,爬取更快
+prefs = {"profile.managed_default_content_settings.images": 2, 'permissions.default.stylesheet':2}
+options.add_experimental_option("prefs", prefs)
 driver = webdriver.Chrome(options=options)
+# 覆盖window.navigator.webdriver的值->undefined
 driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
     "source": """
                 Object.defineProperty(navigator, 'webdriver', {
@@ -25,19 +31,22 @@ driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
               """
 })
 
-
+# 每次清除cookies,不然会被拒绝访问
+driver.delete_all_cookies()
+time.sleep(0.5)
 # 访问网页
 driver.get("https://www.louisvuitton.cn/zhs-cn/homepage")
-time.sleep(1)
-# 点击搜素按钮
+time.sleep(random.uniform(1.5, 2))
+# 同意cookies
 driver.find_element(By.CLASS_NAME, "ucm-button.ucm-button--default.ucm-choice__yes").click()
-driver.find_element(By.CLASS_NAME, "lv-button").click() # 点击搜索按钮
+time.sleep(random.uniform(1.5, 2.5))
+driver.find_element_by_css_selector("[aria-label='搜索']").click()  # 点击搜索按钮
 element = driver.find_element_by_id('searchHeaderInput')
 element.send_keys("LV TRAINER")  # 输入搜索内容
 element.send_keys(Keys.ENTER)   # 回车
-time.sleep(2)
+time.sleep(random.uniform(2, 2.5))
 driver.find_element_by_id('product-1ABLY1').click()  # 点击商品进去详情页
-time.sleep(2)
+time.sleep(random.uniform(1.5, 2.5))
 # good_id = driver.find_element(By.CLASS_NAME, "lv-product__sku").text
 # good_name = driver.find_element(By.CLASS_NAME, "lv-product__name").text
 # good_price = driver.find_element(By.CLASS_NAME, "notranslate").text
@@ -69,10 +78,10 @@ def write_csv(head,all_book_info,path):
 
 # 爬取一页
 def get_onePage_info():
-    time.sleep(1)
+    time.sleep(random.uniform(1.5, 2.5))
     # 进入款式列表
     driver.find_elements(By.CLASS_NAME, "lv-product-variation-selector__value")[0].click()
-    time.sleep(1)
+    time.sleep(random.uniform(1.5, 2.5))
     # 获取款式list
     items = driver.find_elements(By.CLASS_NAME, "lv-choice-group__item.lv-product-panel-grid__list-item")
     length = items.__len__()
@@ -81,7 +90,7 @@ def get_onePage_info():
     for i in range(length):
         # 依次点击不同款式
         driver.find_elements(By.CLASS_NAME, "lv-choice-group__item.lv-product-panel-grid__list-item")[i].click()
-        time.sleep(1)
+        time.sleep(random.uniform(1.5, 2.5))
         # 获取商品信息
         name = driver.find_element(By.CLASS_NAME, "lv-product__name").text
         color = driver.find_elements(By.CLASS_NAME, "lv-product-variation-selector__value")[0].text
@@ -91,16 +100,16 @@ def get_onePage_info():
         if i == items.__len__()-1:
             break
         driver.find_elements(By.CLASS_NAME, "lv-product-variation-selector__value")[0].click()
-        time.sleep(1)
+        time.sleep(random.uniform(1.5, 2.5))
 
     return MulSize_stocks
 
 
 def get_sizeStock_info():
     # 进入尺码列表查看库存
-    time.sleep(1)
+    time.sleep(random.uniform(1.5, 2.5))
     driver.find_elements(By.CLASS_NAME, "lv-product-variation-selector__value")[1].click()
-    time.sleep(1)
+    time.sleep(random.uniform(1.5, 2.5))
     sizes = driver.find_elements(By.CLASS_NAME, "lv-product-panel-list__item-name")
     stocks = driver.find_elements(By.CLASS_NAME, "lv-product-panel-list__item-status")
     size_stocks = []
@@ -109,10 +118,10 @@ def get_sizeStock_info():
             size_stocks.append(f"{sizes[i].text}--可选购")
         else:
             size_stocks.append(f"{sizes[i].text}--{stocks[i].text}")
-    time.sleep(1)
+    # time.sleep(random.uniform(1.5, 2.5))
     # 关闭尺码表
-    driver.find_element(By.CLASS_NAME, "lv-modal__close.lv-icon-button.-light").click()
-    time.sleep(1)
+    driver.find_element_by_xpath("//*[@id='lv-modal-target']/div[2]/div[3]/div/div/button").click()
+    time.sleep(random.uniform(1.5, 2.5))
     return size_stocks
 
 
